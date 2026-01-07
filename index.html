@@ -5,8 +5,6 @@
   <title>Arcunox Alias Generator</title>
 
   <style>
-/* Minimal, Arcunox-style aesthetic */
-/* Explicit, sovereign box-sizing — no universal selector */
 html, body,
 #app,
 .plate,
@@ -24,7 +22,7 @@ button,
 .copy-btn,
 .output,
 .output span {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 html, body {
@@ -38,15 +36,13 @@ html, body {
                "SF Pro Text", "Segoe UI", sans-serif;
 }
 
-/* --- TOP‑ANCHORED 1080 DESKTOP GEOMETRY (Solarc style) --- */
 body {
   display: flex;
   justify-content: center;
-  align-items: flex-start;   /* top‑anchored */
-  padding-top: 40px;         /* same breathing room as Solarc */
+  align-items: flex-start;
+  padding-top: 40px;
 }
 
-/* The fixed-width artifact */
 #app {
   width: 1080px;
   display: flex;
@@ -54,7 +50,6 @@ body {
   align-items: center;
 }
 
-/* --- TITLE BAR --- */
 .titlebar {
   width: 100%;
   padding: 14px 0;
@@ -64,23 +59,20 @@ body {
   font-size: 13px;
   color: #888;
   border-bottom: 1px solid #222;
-  margin-bottom: 40px;       /* matches Solarc */
+  margin-bottom: 40px;
 }
 
-/* --- PLATE (inner panel) --- */
 .plate {
-  width: 500px;              /* matches Solarc */
+  width: 500px;
   padding: 32px;
   background: #0b0c10;
   border: 1px solid #222;
 }
 
-/* Inner content block */
 .wrap {
   width: 100%;
 }
 
-/* --- FOOTNOTE (outside plate) --- */
 .footnote {
   margin-top: 16px;
   font-size: 10px;
@@ -88,8 +80,6 @@ body {
   text-transform: uppercase;
   color: #555;
 }
-
-/* --- ORIGINAL STYLES BELOW --- */
 
 .title {
   text-transform: uppercase;
@@ -124,6 +114,12 @@ input[type="text"] {
 
 input[type="text"]:focus {
   border-color: #f5f5f5;
+}
+
+/* italic placeholders */
+input::placeholder {
+  font-style: italic;
+  color: #555;
 }
 
 .btn-generate {
@@ -173,7 +169,36 @@ input[type="text"]:focus {
   cursor: pointer;
   white-space: nowrap;
 }
- </style>
+
+/* segmented controls for separators */
+.seg {
+  display: flex;
+  width: 100%;
+  border: 1px solid #333;
+}
+
+.seg-btn {
+  flex: 1;
+  padding: 8px 0;
+  background: #121318;
+  border: none;
+  border-right: 1px solid #333;
+  color: #f5f5f5;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.seg-btn:last-child {
+  border-right: none;
+}
+
+.seg-btn.active {
+  background: #1a1c22;
+  border-bottom: 1px solid #f5f5f5;
+}
+  </style>
 </head>
 
 <body>
@@ -187,14 +212,33 @@ input[type="text"]:focus {
       <div class="title">Alias</div>
 
       <div class="row">
-        <label for="seed">Seed (optional)</label>
-        <input id="seed" type="text" autocomplete="off" spellcheck="false">
+        <label for="seed">Seed</label>
+        <input id="seed" type="text" placeholder="optional" autocomplete="off" spellcheck="false">
       </div>
 
       <div class="row">
         <label for="domain">Domain</label>
-        <input id="domain" type="text" autocomplete="off" spellcheck="false"
-               value="arcunox.com">
+        <input id="domain" type="text" placeholder="optional" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="row">
+        <label>Prefix → Entropy</label>
+        <div class="seg" data-sep-group="A">
+          <button type="button" data-val="none" class="seg-btn active">none</button>
+          <button type="button" data-val="_"    class="seg-btn">underscore</button>
+          <button type="button" data-val="-"    class="seg-btn">hyphen</button>
+          <button type="button" data-val="."    class="seg-btn">period</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label>Entropy → Suffix</label>
+        <div class="seg" data-sep-group="B">
+          <button type="button" data-val="none" class="seg-btn active">none</button>
+          <button type="button" data-val="_"    class="seg-btn">underscore</button>
+          <button type="button" data-val="-"    class="seg-btn">hyphen</button>
+          <button type="button" data-val="."    class="seg-btn">period</button>
+        </div>
       </div>
 
       <button class="btn-generate" id="generateBtn">Generate</button>
@@ -207,7 +251,6 @@ input[type="text"]:focus {
     </div>
   </div>
 
-  <!-- FOOTNOTE OUTSIDE THE PLATE -->
   <div class="footnote">No logs. No analytics. All client‑side.</div>
 
 </div>
@@ -250,22 +293,62 @@ input[type="text"]:focus {
 
   let currentMode = "abstract";
 
-  const seedInput = document.getElementById("seed");
-  const domainInput = document.getElementById("domain");
-  const generateBtn = document.getElementById("generateBtn");
-  const aliasOutput = document.getElementById("aliasOutput");
-  const copyBtn = document.getElementById("copyBtn");
+  const seedInput    = document.getElementById("seed");
+  const domainInput  = document.getElementById("domain");
+  const generateBtn  = document.getElementById("generateBtn");
+  const aliasOutput  = document.getElementById("aliasOutput");
+  const copyBtn      = document.getElementById("copyBtn");
+
+  // segmented control state
+  let sepA = "none";
+  let sepB = "none";
+
+  function initSegControls() {
+    const groups = document.querySelectorAll(".seg");
+
+    groups.forEach(group => {
+      const groupId = group.getAttribute("data-sep-group"); // "A" or "B"
+      const buttons = group.querySelectorAll(".seg-btn");
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          // clear active in this group
+          buttons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+
+          const val = btn.getAttribute("data-val");
+          if (groupId === "A") {
+            sepA = val;
+          } else if (groupId === "B") {
+            sepB = val;
+          }
+        });
+      });
+    });
+  }
 
   function generateAlias() {
     const mode = MODES[currentMode];
     const seed = seedInput.value;
-    const domain = (domainInput.value || "").trim() || "arcunox.com";
 
-    const prefix = randomChoice(mode.prefixes);
+    const domainRaw = (domainInput.value || "").trim();
+    const domain = domainRaw === "" ? "" : domainRaw;
+
+    const prefix  = randomChoice(mode.prefixes);
     const entropy = randomEntropy(randInt(4, 6));
-    const shard = normalizeShard(seed, mode.shards);
+    const shard   = normalizeShard(seed, mode.shards);
 
-    const alias = `${prefix}${entropy}${shard}@${domain}`;
+    const allowed = ["_", "-", ".", "none"];
+
+    let sA = allowed.includes(sepA) ? sepA : "none";
+    let sB = allowed.includes(sepB) ? sepB : "none";
+
+    if (sA === "none") sA = "";
+    if (sB === "none") sB = "";
+
+    const localPart = `${prefix}${sA}${entropy}${sB}${shard}`;
+    const alias = domain === "" ? localPart : `${localPart}@${domain}`;
+
     aliasOutput.textContent = alias;
     return alias;
   }
@@ -284,8 +367,10 @@ input[type="text"]:focus {
     } catch (e) {}
   });
 
+  initSegControls();
   generateAlias();
 </script>
 
 </body>
 </html>
+
