@@ -5,8 +5,35 @@
 <link rel="icon" href="data:,">
 <title>Arcunox Alias Generator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Deterministic alias generator for privacy-focused workflows.">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Arcunox","operatingSystem":"Web","applicationCategory":"Utility","url":"https://arcunox.com"}
+{
+"@context": "https://schema.org",
+"@graph": [
+{
+"@type": "SoftwareApplication",
+"name": "Arcunox",
+"operatingSystem": "Web",
+"applicationCategory": "Utility",
+"url": "https://arcunox.com"
+},
+{
+"@type": "WebSite",
+"url": "https://arcunox.com",
+"name": "Arcunox",
+"potentialAction": {
+"@type": "SearchAction",
+"target": "https://arcunox.com/?q={query}",
+"query-input": "required name=query"
+}
+},
+{
+"@type": "Organization",
+"name": "Arcunox",
+"url": "https://arcunox.com"
+}
+]
+}
 </script>
 <style>
 :root {
