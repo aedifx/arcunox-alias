@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk UUID Generator</title>
+    <meta name="description" content="Minimal, privacy-first bulk UUID generator. No tracking. No analytics. No dependencies.">
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            margin: 0;
+            padding: 2rem;
+            font-family: system-ui, sans-serif;
+            background: #050608;
+            color: #f5f5f5;
+            line-height: 1.6;
+        }
+        main {
+            max-width: 880px;
+            margin: auto;
+            display: grid;
+            gap: 1.5rem;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: 0.04em;
+        }
+        p { color: #b3b3b3; max-width: 60ch; }
+
+        .panel {
+            border: 1px solid #262833;
+            background: radial-gradient(circle at top left, #151824 0, #050608 55%);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #8b8fa0;
+            margin-bottom: 0.5rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            align-items: center;
+        }
+
+        button {
+            padding: 0.55rem 1.1rem;
+            font-size: 0.9rem;
+            border: 1px solid #f5f5f5;
+            background: transparent;
+            color: #f5f5f5;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+        button:hover {
+            background: #f5f5f5;
+            color: #050608;
+        }
+
+        input[type="number"] {
+            width: 100px;
+            padding: 0.4rem 0.6rem;
+            box-sizing: border-box;
+            border: 1px solid #303344;
+            background: #05060a;
+            color: #f5f5f5;
+            font-family: system-ui, sans-serif;
+            font-size: 0.9rem;
+        }
+        input[type="number"]:focus {
+            outline: 1px solid #4f7dff;
+            border-color: #4f7dff;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 220px;
+            padding: 0.75rem;
+            box-sizing: border-box;
+            border: 1px solid #303344;
+            background: #05060a;
+            color: #f5f5f5;
+            resize: vertical;
+            font-family: ui-monospace, monospace;
+            font-size: 0.9rem;
+        }
+        textarea:focus {
+            outline: 1px solid #4f7dff;
+            border-color: #4f7dff;
+        }
+
+        .status {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: #8b8fa0;
+        }
+
+        footer {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: #5f6475;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <section>
+            <h1>Bulk UUID Generator</h1>
+            <p>Generate multiple UUID v4 values locally in your browser. No tracking, no analytics, no external requests.</p>
+        </section>
+
+        <section class="panel">
+            <div class="label">Count</div>
+            <div class="controls">
+                <button data-count="10">10</button>
+                <button data-count="100">100</button>
+                <button data-count="1000">1000</button>
+                <span>or custom:</span>
+                <input id="count" type="number" min="1" max="10000" value="10">
+                <button id="generate">Generate</button>
+                <button id="clear">Clear</button>
+            </div>
+            <div class="status" id="status">Status: waiting</div>
+        </section>
+
+        <section class="panel">
+            <div class="label">Output</div>
+            <textarea id="output" readonly placeholder="Generated UUIDs will appear here, one per line."></textarea>
+
+            <div class="controls">
+                <button id="copy">Copy</button>
+            </div>
+        </section>
+
+        <footer>No tracking. No analytics. No cookies. No logs.</footer>
+    </main>
+
+    <script>
+        function uuidv4() {
+            const bytes = new Uint8Array(16);
+            crypto.getRandomValues(bytes);
+
+            // Per RFC 4122 section 4.4
+            bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+            bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10
+
+            const hex = Array.from(bytes, b => b.toString(16).padStart(2, "0"));
+
+            return [
+                hex.slice(0, 4).join(""),
+                hex.slice(4, 6).join(""),
+                hex.slice(6, 8).join(""),
+                hex.slice(8, 10).join(""),
+                hex.slice(10, 16).join("")
+            ].join("-");
+        }
+
+        const output = document.getElementById("output");
+        const status = document.getElementById("status");
+        const countInput = document.getElementById("count");
+
+        function generate(count) {
+            const n = Math.max(1, Math.min(10000, count | 0));
+            const uuids = [];
+            for (let i = 0; i < n; i++) {
+                uuids.push(uuidv4());
+            }
+            output.value = uuids.join("\n");
+            status.textContent = "Status: generated " + n + " UUIDs";
+        }
+
+        document.querySelectorAll("button[data-count]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const c = parseInt(btn.getAttribute("data-count"), 10);
+                countInput.value = c;
+                generate(c);
+            });
+        });
+
+        document.getElementById("generate").onclick = () => {
+            const c = parseInt(countInput.value, 10);
+            if (Number.isNaN(c)) {
+                status.textContent = "Status: invalid count";
+                return;
+            }
+            generate(c);
+        };
+
+        document.getElementById("clear").onclick = () => {
+            output.value = "";
+            status.textContent = "Status: waiting";
+        };
+
+        document.getElementById("copy").onclick = async () => {
+            if (!output.value) return;
+            try {
+                await navigator.clipboard.writeText(output.value);
+                status.textContent = "Status: copied to clipboard";
+            } catch {
+                status.textContent = "Status: copy failed";
+            }
+        };
+    </script>
+</body>
+</html>

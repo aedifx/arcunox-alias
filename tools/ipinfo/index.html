@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extended IP Info</title>
+    <meta name="description" content="Minimal, privacy-first extended IP information viewer using Cloudflare trace. No tracking. No analytics. No dependencies.">
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            margin: 0;
+            padding: 2rem;
+            font-family: system-ui, sans-serif;
+            background: #050608;
+            color: #f5f5f5;
+            line-height: 1.6;
+        }
+        main {
+            max-width: 880px;
+            margin: auto;
+            display: grid;
+            gap: 1.5rem;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: 0.04em;
+        }
+        p { color: #b3b3b3; max-width: 60ch; }
+
+        .panel {
+            border: 1px solid #262833;
+            background: radial-gradient(circle at top left, #151824 0, #050608 55%);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .group-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #8b8fa0;
+            margin-bottom: 0.5rem;
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: 160px 1fr;
+            gap: 0.4rem 1rem;
+            font-family: ui-monospace, monospace;
+            font-size: 0.9rem;
+        }
+        .kv div:nth-child(odd) {
+            color: #8b8fa0;
+        }
+        footer {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: #5f6475;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <section>
+            <h1>Extended IP Info</h1>
+            <p>Deterministic, client-side inspection of Cloudflare connection metadata. No tracking, no analytics, no logs.</p>
+        </section>
+
+        <section class="panel">
+            <div class="group-title">Connection Details</div>
+            <div class="kv" id="connection"></div>
+        </section>
+
+        <section class="panel">
+            <div class="group-title">Network & Location</div>
+            <div class="kv" id="network"></div>
+        </section>
+
+        <section class="panel">
+            <div class="group-title">Client & Protocol</div>
+            <div class="kv" id="client"></div>
+        </section>
+
+        <footer>No tracking. No analytics. No cookies. No logs.</footer>
+    </main>
+
+    <script>
+        function parseTrace(text) {
+            const lines = text.trim().split('\n');
+            const data = {};
+            for (const line of lines) {
+                const [key, value] = line.split('=');
+                data[key] = value || '';
+            }
+            return data;
+        }
+
+        function renderKV(target, entries) {
+            const el = document.getElementById(target);
+            el.innerHTML = '';
+            for (const [k, v] of entries) {
+                el.innerHTML += `<div>${k}</div><div>${v}</div>`;
+            }
+        }
+
+        fetch('/cdn-cgi/trace')
+            .then(r => r.text())
+            .then(t => {
+                const d = parseTrace(t);
+
+                renderKV('connection', [
+                    ['IP Address', d.ip],
+                    ['Visit Scheme', d.visit_scheme],
+                    ['HTTP Protocol', d.http],
+                    ['TLS Version', d.tls],
+                    ['Timestamp', d.ts]
+                ]);
+
+                renderKV('network', [
+                    ['Datacenter (colo)', d.colo],
+                    ['Country', d.loc],
+                    ['WARP', d.warp],
+                    ['Gateway', d.gateway]
+                ]);
+
+                renderKV('client', [
+                    ['User Agent', d.uag],
+                    ['Bot?', d.bot || 'unknown'],
+                    ['Ray ID', d.ray || 'n/a']
+                ]);
+            });
+    </script>
+</body>
+</html>

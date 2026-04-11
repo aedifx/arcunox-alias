@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Decoder</title>
+    <meta name="description" content="Minimal, privacy-first JWT decoder. Decodes header and payload locally. No verification. No tracking. No analytics.">
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            margin: 0;
+            padding: 2rem;
+            font-family: system-ui, sans-serif;
+            background: #050608;
+            color: #f5f5f5;
+            line-height: 1.6;
+        }
+        main {
+            max-width: 880px;
+            margin: auto;
+            display: grid;
+            gap: 1.5rem;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: 0.04em;
+        }
+        p { color: #b3b3b3; max-width: 60ch; }
+
+        .panel {
+            border: 1px solid #262833;
+            background: radial-gradient(circle at top left, #151824 0, #050608 55%);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #8b8fa0;
+            margin-bottom: 0.5rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            padding: 0.75rem;
+            box-sizing: border-box;
+            border: 1px solid #303344;
+            background: #05060a;
+            color: #f5f5f5;
+            resize: vertical;
+            font-family: ui-monospace, monospace;
+            font-size: 0.9rem;
+        }
+        textarea:focus {
+            outline: 1px solid #4f7dff;
+            border-color: #4f7dff;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+
+        button {
+            padding: 0.55rem 1.1rem;
+            font-size: 0.9rem;
+            border: 1px solid #f5f5f5;
+            background: transparent;
+            color: #f5f5f5;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+        button:hover {
+            background: #f5f5f5;
+            color: #050608;
+        }
+
+        footer {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: #5f6475;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <section>
+            <h1>JWT Decoder</h1>
+            <p>Decode JWT header and payload locally. No verification, no network calls, no tracking, no analytics.</p>
+        </section>
+
+        <section class="panel">
+            <div class="label">JWT Input</div>
+            <textarea id="input" placeholder="Paste a JWT here…"></textarea>
+
+            <div class="controls">
+                <button id="decode">Decode</button>
+                <button id="clear">Clear</button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="label">Header (decoded)</div>
+            <textarea id="header" readonly placeholder="Decoded header will appear here."></textarea>
+        </section>
+
+        <section class="panel">
+            <div class="label">Payload (decoded)</div>
+            <textarea id="payload" readonly placeholder="Decoded payload will appear here."></textarea>
+        </section>
+
+        <section class="panel">
+            <div class="label">Signature (raw Base64URL)</div>
+            <textarea id="signature" readonly placeholder="Signature will appear here."></textarea>
+        </section>
+
+        <footer>No tracking. No analytics. No cookies. No logs.</footer>
+    </main>
+
+    <script>
+        function base64UrlDecode(str) {
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            const pad = str.length % 4;
+            if (pad) str += '='.repeat(4 - pad);
+            try {
+                return decodeURIComponent(escape(atob(str)));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function pretty(obj) {
+            try {
+                return JSON.stringify(JSON.parse(obj), null, 4);
+            } catch {
+                return obj;
+            }
+        }
+
+        document.getElementById('decode').onclick = () => {
+            const raw = document.getElementById('input').value.trim();
+            const headerEl = document.getElementById('header');
+            const payloadEl = document.getElementById('payload');
+            const sigEl = document.getElementById('signature');
+
+            headerEl.value = payloadEl.value = sigEl.value = '';
+
+            if (!raw) return;
+
+            const parts = raw.split('.');
+            if (parts.length !== 3) {
+                headerEl.value = 'Invalid JWT: must contain 3 parts.';
+                return;
+            }
+
+            const [h, p, s] = parts;
+
+            const headerDecoded = base64UrlDecode(h);
+            const payloadDecoded = base64UrlDecode(p);
+
+            headerEl.value = headerDecoded ? pretty(headerDecoded) : 'Invalid header encoding.';
+            payloadEl.value = payloadDecoded ? pretty(payloadDecoded) : 'Invalid payload encoding.';
+            sigEl.value = s || '';
+        };
+
+        document.getElementById('clear').onclick = () => {
+            document.getElementById('input').value = '';
+            document.getElementById('header').value = '';
+            document.getElementById('payload').value = '';
+            document.getElementById('signature').value = '';
+        };
+    </script>
+</body>
+</html>
