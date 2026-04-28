@@ -1,14 +1,14 @@
 # Arcunox
 
-Deterministic alias generator for privacy‑focused workflows.  
-Static, reproducible, no tracking.
+Alias generator for privacy‑focused workflows.  
+Static, no tracking.
 
 - Website: https://arcunox.com  
 - Source: https://github.com/arcunox/arcunox  
 
 ## Overview
 
-Arcunox produces deterministic aliases with no randomness, no storage, and no server‑side logic.  
+Arcunox produces aliases with no storage, and no server‑side logic.  
 A single‑page static utility designed for predictable, privacy‑preserving identity hygiene.
 
 ## Usage
@@ -19,11 +19,10 @@ Open:
 https://arcunox.com
 ```
 
-Enter input → receive deterministic alias output.
+Enter input → receive alias output.
 
 ## Features
-
-- Deterministic output  
+ 
 - Zero tracking  
 - Zero storage  
 - Minimal static HTML/CSS/JS  
